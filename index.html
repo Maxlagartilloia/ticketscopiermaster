@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Tickets - Copiermaster C&G</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-    th { position: sticky; top: 0; background: #f8fafc; }
+    body{ font-family: Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; background:#f1f5f9 }
+    th{ position:sticky; top:0; background:#f8fafc }
   </style>
 </head>
 <body>
@@ -18,18 +18,18 @@
   <div id="login" class="min-h-screen flex items-center justify-center">
     <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border relative z-[9999]">
       <div class="text-center mb-6">
-        <img src="https://i.postimg.cc/6qRNQd57/468963711-3994290450845859-6671631898219414239-n-removebg-preview.webp" 
+        <img src="https://i.postimg.cc/6qRNQd57/468963711-3994290450845859-6671631898219414239-n-removebg-preview.webp"
              alt="Copiermaster C&G" class="mx-auto h-28">
         <h1 class="text-2xl font-bold text-slate-800 mt-4">Acceso al Panel de Administración</h1>
         <p class="text-slate-500">Inicia sesión para administrar tus tickets de soporte.</p>
       </div>
       <form id="loginForm" class="space-y-6">
-        <input id="email" type="email" placeholder="Correo electrónico" 
+        <input id="email" type="email" placeholder="Correo electrónico"
                class="w-full border p-3 rounded-md focus:ring-lime-500 focus:border-lime-500" required>
-        <input id="password" type="password" placeholder="Contraseña" 
+        <input id="password" type="password" placeholder="Contraseña"
                class="w-full border p-3 rounded-md focus:ring-lime-500 focus:border-lime-500" required>
         <button class="w-full bg-slate-900 text-white py-3 rounded-md font-semibold">Iniciar Sesión</button>
-        <p id="loginErr" class="text-red-600 text-center text-sm"></p>
+        <p id="loginErr" class="text-red-600 text-center text-sm min-h-[1.25rem]"></p>
       </form>
       <div class="text-center mt-3">
         <button id="resetBtn" class="text-sm font-semibold text-lime-700 hover:underline">
@@ -99,20 +99,23 @@
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // ⚡ Configuración real de tu proyecto Firebase
+    // Config real de tu proyecto Firebase
     const firebaseConfig = {
       apiKey: "AlzaSyBxDQtHyAn6hhJNSyco_x_KaAtAjw0uEto",
       authDomain: "tickets-copiermaster-ec.firebaseapp.com",
       projectId: "tickets-copiermaster-ec",
       storageBucket: "tickets-copiermaster-ec.appspot.com"
     };
-    const appId = "default-app-id";
+
+    // 🔴 appId ajustado para tu colección real:
+    // leerá /artifacts/tickets-copiermaster-ec/public/data/tickets
+    const appId = "tickets-copiermaster-ec";
 
     const app  = initializeApp(firebaseConfig);
     const db   = getFirestore(app);
     const auth = getAuth(app);
 
-    // refs
+    // refs UI
     const login = document.getElementById("login");
     const panel = document.getElementById("panel");
     const loginForm = document.getElementById("loginForm");
@@ -126,7 +129,7 @@
     const noData   = document.getElementById("noData");
     const csvBtn   = document.getElementById("csvBtn");
 
-    // Auth state
+    // Estado de autenticación
     onAuthStateChanged(auth, user => {
       if (user) {
         login.classList.add("hidden");
@@ -147,7 +150,7 @@
       const pass  = document.getElementById("password").value;
       signInWithEmailAndPassword(auth, email, pass)
         .catch(err=>{
-          console.error(err);
+          console.error("Login error:", err);
           const map = {
             "auth/invalid-email":"Correo inválido.",
             "auth/user-not-found":"El usuario no existe.",
@@ -159,7 +162,7 @@
         });
     });
 
-    // Reset password
+    // Reset de contraseña
     resetBtn.addEventListener("click", async ()=>{
       resetOk.classList.add("hidden");
       const email = document.getElementById("email").value.trim();
@@ -171,8 +174,9 @@
     // Logout
     logoutBtn.addEventListener("click", ()=> signOut(auth));
 
-    // Tickets
+    // -------- Tickets ----------
     let editingId = null;
+
     function listenTickets(){
       const path = `/artifacts/${appId}/public/data/tickets`;
       const q = query(collection(db, path), orderBy("fechaCreacion","desc"));
@@ -180,24 +184,121 @@
         tbody.innerHTML = "";
         loader.classList.add("hidden");
         ticketsWrap.classList.remove("hidden");
+
         if (snap.empty){ noData.classList.remove("hidden"); return; }
         noData.classList.add("hidden");
+
         snap.forEach(d=>{
           const t = d.data(); t.id = d.id;
           const tr = document.createElement("tr");
           tr.className = "hover:bg-slate-50";
           tr.innerHTML = `
-            <td class="px-6 py-3 text-sm font-semibold">#${t.id.slice(0,6)}</td>
+            <td class="px-6 py-3 text-sm font-semibold">#${t.id?.slice?.(0,6) ?? d.id.slice(0,6)}</td>
             <td class="px-6 py-3 text-sm">${t.nombre||""}</td>
             <td class="px-6 py-3 text-sm">${t.asignadoA||"—"}</td>
             <td class="px-6 py-3 text-sm">${t.fechaCreacion? new Date(t.fechaCreacion.seconds*1000).toLocaleString('es-EC') : "N/A"}</td>
-            <td class="px-6 py-3 text-sm"><span class="px-2 py-1 rounded-full text-xs">${t.estado||""}</span></td>
+            <td class="px-6 py-3 text-sm">${badge(t.estado)}</td>
             <td class="px-6 py-3 text-sm"><button class="text-lime-700 font-semibold underline" data-id="${d.id}">Ver / Editar</button></td>`;
           tbody.appendChild(tr);
         });
         lucide.createIcons();
+      }, err=>{
+        console.error("Snapshot error:", err);
+        loader.innerHTML = `<p class="text-red-600">No se pudieron cargar los tickets.</p>`;
       });
     }
+
+    function badge(s){
+      const base = 'px-2 py-1 rounded-full text-xs';
+      if(s==="Abierto")     return `<span class="${base} bg-blue-100 text-blue-800">Abierto</span>`;
+      if(s==="En Proceso")  return `<span class="${base} bg-yellow-100 text-yellow-800">En Proceso</span>`;
+      if(s==="Cerrado")     return `<span class="${base} bg-green-100 text-green-800">Cerrado</span>`;
+      return `<span class="${base} bg-slate-100 text-slate-800">${s||"—"}</span>`;
+    }
+
+    // Modal
+    const modal     = document.getElementById("modal");
+    const modalBody = document.getElementById("modalBody");
+    const closeModal= document.getElementById("closeModal");
+    const saveBtn   = document.getElementById("saveBtn");
+
+    document.addEventListener("click", async (e)=>{
+      const btn = e.target.closest("[data-id]");
+      if(!btn) return;
+      editingId = btn.getAttribute("data-id");
+      const ref = doc(db, `/artifacts/${appId}/public/data/tickets`, editingId);
+      const snap = await getDoc(ref);
+      if(!snap.exists()) return;
+      const t = snap.data(); t.id = snap.id;
+      modalBody.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div><b class="text-slate-500">ID:</b> #${t.id.slice(0,6)}</div>
+          <div><b class="text-slate-500">Fecha:</b> ${t.fechaCreacion? new Date(t.fechaCreacion.seconds*1000).toLocaleString('es-EC') : "N/A"}</div>
+          <div><b class="text-slate-500">Cliente:</b> ${t.nombre||""}</div>
+          <div><b class="text-slate-500">Email:</b> ${t.email||""}</div>
+          <div><b class="text-slate-500">Teléfono:</b> ${t.telefono||""}</div>
+          <div><b class="text-slate-500">Empresa:</b> ${t.empresa||"—"}</div>
+        </div>
+        <div class="mt-3">
+          <b class="text-slate-500 block mb-1">Descripción:</b>
+          <div class="bg-slate-50 rounded p-3">${(t.descripcion||"").replace(/\n/g,"<br>")}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="text-sm font-semibold">Estado</label>
+            <select id="estado" class="w-full mt-1 border rounded p-2">
+              ${["Abierto","En Proceso","Cerrado"].map(x=>`<option ${t.estado===x?"selected":""}>${x}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Asignado a</label>
+            <input id="asignado" class="w-full mt-1 border rounded p-2" value="${t.asignadoA||""}">
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="text-sm font-semibold">Notas internas</label>
+          <textarea id="notas" rows="4" class="w-full mt-1 border rounded p-2">${t.notasInternas||""}</textarea>
+        </div>`;
+      modal.classList.remove("hidden");
+    });
+
+    closeModal.addEventListener("click", ()=> modal.classList.add("hidden"));
+    modal.addEventListener("click", (e)=>{ if(e.target===modal) modal.classList.add("hidden"); });
+
+    saveBtn.addEventListener("click", async ()=>{
+      if(!editingId) return;
+      const ref = doc(db, `/artifacts/${appId}/public/data/tickets`, editingId);
+      await updateDoc(ref, {
+        estado: document.getElementById("estado").value,
+        asignadoA: document.getElementById("asignado").value,
+        notasInternas: document.getElementById("notas").value
+      });
+      modal.classList.add("hidden");
+    });
+
+    // Exportar CSV
+    csvBtn.addEventListener("click", async ()=>{
+      const q = query(collection(db, `/artifacts/${appId}/public/data/tickets`), orderBy("fechaCreacion","desc"));
+      const snap = await getDocs(q);
+      let csv = "data:text/csv;charset=utf-8,";
+      csv += ["ID","Fecha","Cliente","Email","Teléfono","Empresa","Tipo","Modelo","Descripción","Estado","Asignado","Notas"].join(",")+"\r\n";
+      snap.forEach(d=>{
+        const t = d.data();
+        const row = [
+          d.id,
+          t.fechaCreacion? new Date(t.fechaCreacion.seconds*1000).toLocaleString('es-EC') : "N/A",
+          t.nombre||"", t.email||"", t.telefono||"", t.empresa||"",
+          t.tipoSolicitud||"", t.modeloEquipo||"",
+          (t.descripcion||"").replace(/"/g,'""'),
+          t.estado||"", t.asignadoA||"", (t.notasInternas||"").replace(/"/g,'""')
+        ].map(x=>`"${x}"`).join(",");
+        csv += row+"\r\n";
+      });
+      const a = document.createElement("a");
+      a.href = encodeURI(csv);
+      a.download = `reporte_tickets_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    });
   </script>
 </body>
 </html>
